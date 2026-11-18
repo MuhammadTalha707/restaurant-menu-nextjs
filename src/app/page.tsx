@@ -1,69 +1,175 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect, FormEvent } from 'react';
+
+interface MenuItem {
+  id: number;
+  name: string;
+  price: string | number;
+  description: string;
+}
+
+export default function RestaurantMenu() {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const fetchMenu = async () => {
+    try {
+      const response = await fetch('/api/menu');
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setMenuItems(data);
+      }
+    } catch (error) {
+      console.error('Error fetching menu:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenu();
+  }, []);
+
+  const handleAddItem = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name || !price || !description) return;
+
+    try {
+      const response = await fetch('/api/menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          price: parseFloat(price),
+          description,
+        }),
+      });
+
+      if (response.ok) {
+        setName('');
+        setPrice('');
+        setDescription('');
+        fetchMenu();
+      }
+    } catch (error) {
+      console.error('Error adding item:', error);
+    }
+  };
+
+  const handleDeleteItem = async (id: number) => {
+    try {
+      const response = await fetch(`/api/menu/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchMenu();
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-orange-600">Spice & Bite Restaurant</h1>
+          <p className="text-gray-600 mt-2">Dynamic Menu Powered by Next.js & NeonDB</p>
+        </header>
+
+        <div className="bg-white p-6 rounded-lg shadow-md mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Add New Menu Item</h2>
+          <form onSubmit={handleAddItem} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Item Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Chicken Karahi"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 w-full p-2 border border-gray-300 rounded-md text-black"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Price (Rs.)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g. 1200"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="mt-1 w-full p-2 border border-gray-300 rounded-md text-black"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                placeholder="Short menu description..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="mt-1 w-full p-2 border border-gray-300 rounded-md text-black"
+                required
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              className="bg-orange-600 text-white px-6 py-2 rounded-md font-medium hover:bg-orange-700 transition cursor-pointer"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              Add Menu Item
+            </button>
+          </form>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Menu Items</h2>
+          {loading ? (
+            <p className="text-gray-500">Loading menu...</p>
+          ) : menuItems.length === 0 ? (
+            <p className="text-gray-500 bg-white p-6 rounded-lg shadow">No menu items found.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {menuItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white p-6 rounded-lg shadow-md flex flex-col justify-between border-l-4 border-orange-500"
+                >
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-xl font-bold text-gray-800">{item.name}</h3>
+                      <span className="bg-orange-100 text-orange-800 text-sm font-semibold px-3 py-1 rounded-full">
+                        Rs. {item.price}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 mt-2 text-sm">{item.description}</p>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium cursor-pointer"
+                    >
+                      Remove Item
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
+
