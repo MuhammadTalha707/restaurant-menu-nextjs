@@ -6,18 +6,18 @@ import Link from "next/link";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "forgot">("login");
+  const [mode, setMode] = useState<"login" | "change">("login");
 
   // Login States
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  // Forgot Password States
+  // Change Password States
   const [resetUser, setResetUser] = useState("");
-  const [recoveryKey, setRecoveryKey] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [showKey, setShowKey] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
 
   const [error, setError] = useState("");
@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
     }
   };
 
-  const handleForgotReset = async (e: React.FormEvent) => {
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
@@ -60,16 +60,16 @@ export default function AdminLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: resetUser,
-          recoveryKey,
+          currentPassword,
           newPassword,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Password reset failed");
+        setError(data.error || "Password update failed");
       } else {
-        setSuccessMsg("Password reset successful! You can now sign in with your new password.");
-        setRecoveryKey("");
+        setSuccessMsg("Password updated! Please sign in with your new password.");
+        setCurrentPassword("");
         setNewPassword("");
         setMode("login");
       }
@@ -91,15 +91,15 @@ export default function AdminLoginPage() {
             S
           </div>
           <span className="text-xs uppercase tracking-[0.25em] text-amber-400 font-bold">
-            {mode === "login" ? "Executive Chef Portal" : "Account Recovery"}
+            {mode === "login" ? "Executive Chef Portal" : "Admin Security"}
           </span>
           <h1 className="text-3xl font-black mt-1">
-            {mode === "login" ? "Admin Sign In" : "Reset Password"}
+            {mode === "login" ? "Admin Sign In" : "Change Password"}
           </h1>
           <p className="text-gray-400 text-xs mt-2">
             {mode === "login"
               ? "Authorized staff only. Manage menu & security settings."
-              : "Enter your Admin Username and Master Recovery Key (SESSION_SECRET)."}
+              : "Enter your Username, Current Password, and New Password."}
           </p>
         </div>
 
@@ -135,11 +135,11 @@ export default function AdminLoginPage() {
                   onClick={() => {
                     setError("");
                     setSuccessMsg("");
-                    setMode("forgot");
+                    setMode("change");
                   }}
                   className="text-xs text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
                 >
-                  Forgot Password?
+                  Change Password?
                 </button>
               </div>
               <div className="relative">
@@ -186,14 +186,14 @@ export default function AdminLoginPage() {
             </button>
           </form>
         ) : (
-          <form onSubmit={handleForgotReset} className="space-y-4">
+          <form onSubmit={handlePasswordUpdate} className="space-y-4">
             <div>
               <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
-                Admin Username
+                Username
               </label>
               <input
                 type="text"
-                placeholder="e.g. admin"
+                placeholder="Enter admin username"
                 value={resetUser}
                 onChange={(e) => setResetUser(e.target.value)}
                 required
@@ -203,23 +203,23 @@ export default function AdminLoginPage() {
 
             <div>
               <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
-                Master Recovery Key
+                Current Password
               </label>
               <div className="relative">
                 <input
-                  type={showKey ? "text" : "password"}
-                  placeholder="Enter your SESSION_SECRET key"
-                  value={recoveryKey}
-                  onChange={(e) => setRecoveryKey(e.target.value)}
+                  type={showCurrent ? "text" : "password"}
+                  placeholder="Enter current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                   required
                   className="w-full px-4 py-3 pr-14 rounded-xl bg-black/60 border border-white/15 text-sm text-white focus:border-amber-400 focus:outline-none"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowKey(!showKey)}
+                  onClick={() => setShowCurrent(!showCurrent)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-amber-400 cursor-pointer"
                 >
-                  {showKey ? "Hide" : "Show"}
+                  {showCurrent ? "Hide" : "Show"}
                 </button>
               </div>
             </div>
@@ -258,7 +258,7 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold text-sm cursor-pointer"
             >
-              {loading ? "Resetting Password..." : "Reset Password & Return to Login"}
+              {loading ? "Updating Password..." : "Update Password & Return to Login"}
             </button>
 
             <button
