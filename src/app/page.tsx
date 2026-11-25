@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AdminModal, CartDrawer, MenuItem } from "@/components/Modals";
+import Link from "next/link";
+import { CartDrawer, MenuItem } from "@/components/Modals";
 
 interface Booking {
   id: number;
@@ -13,27 +14,13 @@ interface Booking {
 
 const getPhoto = (name: string, id: number) => {
   const n = name.toLowerCase();
-  if (n.includes("pizza"))
-    return "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80";
-  if (n.includes("biryani") || n.includes("pulao") || n.includes("rice"))
-    return "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80";
-  if (n.includes("burger") || n.includes("zinger") || n.includes("sandwich"))
-    return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80";
-  if (n.includes("karahi") || n.includes("handi") || n.includes("chicken") || n.includes("mutton") || n.includes("qorma"))
-    return "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&q=80";
-  if (n.includes("kabab") || n.includes("tikka") || n.includes("boti") || n.includes("bbq") || n.includes("grill"))
-    return "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80";
-  if (n.includes("pasta") || n.includes("macaroni") || n.includes("noodle") || n.includes("chowmein"))
-    return "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80";
-  if (n.includes("fries") || n.includes("nugget") || n.includes("shawarma") || n.includes("roll"))
-    return "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80";
-  if (n.includes("naan") || n.includes("roti") || n.includes("paratha"))
-    return "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80";
-  if (n.includes("sweet") || n.includes("jamun") || n.includes("cake") || n.includes("ice") || n.includes("kheer"))
-    return "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=800&q=80";
-  if (n.includes("drink") || n.includes("shake") || n.includes("juice") || n.includes("tea") || n.includes("coffee") || n.includes("mint"))
-    return "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&q=80";
-
+  if (n.includes("pizza")) return "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80";
+  if (n.includes("biryani") || n.includes("pulao") || n.includes("rice")) return "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80";
+  if (n.includes("burger") || n.includes("zinger") || n.includes("sandwich")) return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80";
+  if (n.includes("karahi") || n.includes("handi") || n.includes("chicken") || n.includes("mutton") || n.includes("qorma")) return "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&q=80";
+  if (n.includes("kabab") || n.includes("tikka") || n.includes("boti") || n.includes("bbq") || n.includes("grill")) return "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80";
+  if (n.includes("pasta") || n.includes("macaroni") || n.includes("noodle")) return "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80";
+  if (n.includes("sweet") || n.includes("jamun") || n.includes("cake") || n.includes("ice")) return "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=800&q=80";
   const others = [
     "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80",
     "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80",
@@ -41,8 +28,6 @@ const getPhoto = (name: string, id: number) => {
   ];
   return others[id % others.length];
 };
-
-
 
 const getCat = (name: string) => {
   const n = name.toLowerCase();
@@ -55,31 +40,21 @@ const getCat = (name: string) => {
 export default function Home() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  // Booking Form States
   const [bName, setBName] = useState("");
   const [bPhone, setBPhone] = useState("");
   const [bGuests, setBGuests] = useState("4");
   const [bDate, setBDate] = useState("");
   const [bookedMsg, setBookedMsg] = useState("");
-
-  // UI States
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
-  const [adminOpen, setAdminOpen] = useState(false);
   const [cart, setCart] = useState<{ item: MenuItem; qty: number }[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [intro, setIntro] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setIntro(false), 900);
+    const t = setTimeout(() => setIntro(false), 800);
     return () => clearTimeout(t);
   }, []);
 
@@ -99,25 +74,6 @@ export default function Home() {
     loadData();
   }, []);
 
-  const handleSaveDish = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !price.trim()) return;
-    setSaving(true);
-    try {
-      const res = await fetch("/api/menu", {
-        method: editingId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingId, name, price: Number(price), description }),
-      });
-      if (res.ok) {
-        setName(""); setPrice(""); setDescription(""); setEditingId(null); setAdminOpen(false);
-        loadData();
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleBookTable = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch("/api/bookings", {
@@ -126,24 +82,12 @@ export default function Home() {
       body: JSON.stringify({ customer_name: bName, phone: bPhone, guests: Number(bGuests), booking_date: bDate || "Tonight 8:00 PM" }),
     });
     if (res.ok) {
-      setBName(""); setBPhone(""); setBDate("");
-      setBookedMsg("Table reserved in NeonDB! Check list below.");
+      setBName("");
+      setBPhone("");
+      setBDate("");
+      setBookedMsg("Table reserved in NeonDB!");
       loadData();
     }
-  };
-
-  const cancelBooking = async (id: number) => {
-    const res = await fetch(`/api/bookings?id=${id}`, { method: "DELETE" });
-    if (res.ok) setBookings((prev) => prev.filter((b) => b.id !== id));
-  };
-
-  const startEdit = (item: MenuItem) => {
-    setEditingId(item.id); setName(item.name); setPrice(String(item.price)); setDescription(item.description || ""); setAdminOpen(true);
-  };
-
-  const removeDish = async (id: number) => {
-    const res = await fetch(`/api/menu?id=${id}`, { method: "DELETE" });
-    if (res.ok) setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   const addToCart = (item: MenuItem) => {
@@ -164,14 +108,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#08080a] text-gray-100 relative overflow-x-hidden">
-      {/* Intro Splash */}
       <div className={`fixed inset-0 z-50 bg-[#050507] flex flex-col items-center justify-center transition-all duration-700 pointer-events-none ${intro ? "opacity-100" : "opacity-0 scale-105"}`}>
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-black font-black text-3xl animate-bounce">S</div>
         <p className="mt-4 text-xl font-extrabold tracking-[0.3em] text-amber-400">SPICE &amp; BITE</p>
       </div>
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-40 backdrop-blur-xl bg-black/70 border-b border-white/10 animate-slide-down">
+      <nav className="sticky top-0 z-40 backdrop-blur-xl bg-black/70 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-black font-black text-xl">S</span>
@@ -182,15 +124,18 @@ export default function Home() {
             <a href="#reserve" className="hover:text-amber-400">Book Table ({bookings.length})</a>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => { setEditingId(null); setName(""); setPrice(""); setDescription(""); setAdminOpen(true); }} className="px-4 py-2 rounded-full bg-white/10 hover:bg-amber-500 hover:text-black text-xs sm:text-sm font-semibold cursor-pointer">+ Chef Panel</button>
-            <button onClick={() => setCartOpen(true)} className="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-black text-xs sm:text-sm font-bold cursor-pointer">Order Bag ({totalCount})</button>
+            <Link href="/login" className="px-4 py-2 rounded-full bg-white/10 hover:bg-amber-500 hover:text-black text-xs sm:text-sm font-semibold transition">
+              Admin Login
+            </Link>
+            <button onClick={() => setCartOpen(true)} className="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-black text-xs sm:text-sm font-bold cursor-pointer">
+              Order Bag ({totalCount})
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <header className="relative min-h-[82vh] flex items-center justify-center px-6 text-center border-b border-white/10 overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center opacity-35 animate-slow-zoom" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1400&q=80')" }} />
+      <header className="relative min-h-[80vh] flex items-center justify-center px-6 text-center border-b border-white/10 overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center opacity-35" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1400&q=80')" }} />
         <div className="relative max-w-4xl mx-auto animate-fade-up">
           <span className="px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs uppercase tracking-widest">Open Today • 12:00 PM – 1:00 AM</span>
           <h1 className="mt-6 text-4xl sm:text-7xl font-black leading-tight">Where Tradition Meets <span className="text-amber-400">Royal Flavor</span></h1>
@@ -202,7 +147,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Menu Section */}
       <section id="menu" className="max-w-7xl mx-auto px-6 py-16">
         <h2 className="text-3xl sm:text-5xl font-extrabold text-center mb-10">Signature <span className="text-amber-400">Dishes</span></h2>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10">
@@ -218,8 +162,8 @@ export default function Home() {
           <p className="text-center text-gray-400">Loading menu...</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {visibleItems.map((item, idx) => (
-              <div key={item.id} className="animate-fade-up group backdrop-blur-xl bg-white/[0.04] border border-white/10 hover:border-amber-500/50 rounded-3xl overflow-hidden shadow-xl flex flex-col justify-between">
+            {visibleItems.map((item) => (
+              <div key={item.id} className="group backdrop-blur-xl bg-white/[0.04] border border-white/10 hover:border-amber-500/50 rounded-3xl overflow-hidden shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="relative h-52 overflow-hidden">
                     <img src={getPhoto(item.name, item.id)} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
@@ -230,12 +174,8 @@ export default function Home() {
                     <p className="text-gray-400 text-sm mt-2">{item.description || "Chef's special recipe."}</p>
                   </div>
                 </div>
-                <div className="px-6 py-4 border-t border-white/10 flex justify-between items-center">
-                  <button onClick={() => addToCart(item)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black text-xs font-bold cursor-pointer">+ Add to Order</button>
-                  <div className="flex gap-2">
-                    <button onClick={() => startEdit(item)} className="text-xs px-3 py-2 rounded-xl bg-white/10 text-amber-300 cursor-pointer">Edit</button>
-                    <button onClick={() => removeDish(item.id)} className="text-xs px-3 py-2 rounded-xl bg-red-500/15 text-red-400 cursor-pointer">Delete</button>
-                  </div>
+                <div className="px-6 py-4 border-t border-white/10">
+                  <button onClick={() => addToCart(item)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black text-xs font-bold cursor-pointer">+ Add to Order</button>
                 </div>
               </div>
             ))}
@@ -243,36 +183,17 @@ export default function Home() {
         )}
       </section>
 
-      {/* Real Database Table Booking Section */}
       <section id="reserve" className="max-w-5xl mx-auto px-6 py-16 border-t border-white/10">
         <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-8 sm:p-10">
           <h2 className="text-3xl font-extrabold text-center mb-6">Book Your <span className="text-amber-400">Table</span></h2>
           <form onSubmit={handleBookTable} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
             <input type="text" placeholder="Your Name" value={bName} onChange={(e) => setBName(e.target.value)} required className="px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-sm text-white" />
             <input type="tel" placeholder="Phone Number" value={bPhone} onChange={(e) => setBPhone(e.target.value)} required className="px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-sm text-white" />
-            <input type="number" min={1} max={20} value={bGuests} onChange={(e) => setBGuests(e.target.value)} placeholder="Guests" required className="px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-sm text-white" />
+            <input type="number" min={1} max={20} value={bGuests} onChange={(e) => setBGuests(e.target.value)} required className="px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-sm text-white" />
             <input type="text" placeholder="Date/Time (e.g. Tonight 9 PM)" value={bDate} onChange={(e) => setBDate(e.target.value)} required className="px-4 py-3 rounded-xl bg-black/50 border border-white/15 text-sm text-white" />
             <button type="submit" className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold text-sm cursor-pointer">Confirm Booking</button>
           </form>
           {bookedMsg && <p className="mt-4 text-center text-emerald-400 text-sm font-semibold">✓ {bookedMsg}</p>}
-
-          {/* Live Reserved Tables List from NeonDB */}
-          {bookings.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <h3 className="text-lg font-bold text-amber-400 mb-4">Reserved Tables ({bookings.length})</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {bookings.map((b) => (
-                  <div key={b.id} className="flex justify-between items-center p-4 rounded-2xl bg-black/40 border border-white/10">
-                    <div>
-                      <p className="font-bold text-white text-sm">{b.customer_name} <span className="text-amber-400">({b.guests} Guests)</span></p>
-                      <p className="text-xs text-gray-400">{b.booking_date} • {b.phone}</p>
-                    </div>
-                    <button onClick={() => cancelBooking(b.id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white cursor-pointer">Cancel</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </section>
 
@@ -280,7 +201,6 @@ export default function Home() {
         © {new Date().getFullYear()} SPICE &amp; BITE RESTAURANT • MM Alam Road, Lahore
       </footer>
 
-      <AdminModal open={adminOpen} onClose={() => setAdminOpen(false)} editingId={editingId} name={name} setName={setName} price={price} setPrice={setPrice} description={description} setDescription={setDescription} onSubmit={handleSaveDish} saving={saving} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} onRemove={(id) => setCart((p) => p.filter((x) => x.item.id !== id))} onOrder={() => { setCart([]); setOrderPlaced(true); setTimeout(() => { setOrderPlaced(false); setCartOpen(false); }, 1800); }} orderPlaced={orderPlaced} />
     </div>
   );
