@@ -6,19 +6,19 @@ import Link from "next/link";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "change">("login");
+  const [mode, setMode] = useState<"login" | "forgot">("login");
 
   // Login States
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  // Change Password States
+  // Forgot Password States
   const [resetUser, setResetUser] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -49,10 +49,16 @@ export default function AdminLoginPage() {
     }
   };
 
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
+  const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
+
+    if (newPassword !== confirmPassword) {
+      setError("New Password and Confirm Password do not match.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/forgot-password", {
@@ -60,17 +66,17 @@ export default function AdminLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: resetUser,
-          currentPassword,
           newPassword,
+          confirmPassword,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Password update failed");
+        setError(data.error || "Password reset failed");
       } else {
         setSuccessMsg("Password updated! Please sign in with your new password.");
-        setCurrentPassword("");
         setNewPassword("");
+        setConfirmPassword("");
         setMode("login");
       }
     } catch {
@@ -91,15 +97,15 @@ export default function AdminLoginPage() {
             S
           </div>
           <span className="text-xs uppercase tracking-[0.25em] text-amber-400 font-bold">
-            {mode === "login" ? "Executive Chef Portal" : "Admin Security"}
+            {mode === "login" ? "Executive Chef Portal" : "Account Recovery"}
           </span>
           <h1 className="text-3xl font-black mt-1">
-            {mode === "login" ? "Admin Sign In" : "Change Password"}
+            {mode === "login" ? "Admin Sign In" : "Reset Password"}
           </h1>
           <p className="text-gray-400 text-xs mt-2">
             {mode === "login"
               ? "Authorized staff only. Manage menu & security settings."
-              : "Enter your Username, Current Password, and New Password."}
+              : "Enter your Username and set a New Password."}
           </p>
         </div>
 
@@ -135,11 +141,11 @@ export default function AdminLoginPage() {
                   onClick={() => {
                     setError("");
                     setSuccessMsg("");
-                    setMode("change");
+                    setMode("forgot");
                   }}
                   className="text-xs text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
                 >
-                  Change Password?
+                  Forgot Password?
                 </button>
               </div>
               <div className="relative">
@@ -186,7 +192,7 @@ export default function AdminLoginPage() {
             </button>
           </form>
         ) : (
-          <form onSubmit={handlePasswordUpdate} className="space-y-4">
+          <form onSubmit={handlePasswordReset} className="space-y-4">
             <div>
               <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
                 Username
@@ -199,29 +205,6 @@ export default function AdminLoginPage() {
                 required
                 className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-sm text-white focus:border-amber-400 focus:outline-none"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
-                Current Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showCurrent ? "text" : "password"}
-                  placeholder="Enter current password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 pr-14 rounded-xl bg-black/60 border border-white/15 text-sm text-white focus:border-amber-400 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrent(!showCurrent)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-amber-400 cursor-pointer"
-                >
-                  {showCurrent ? "Hide" : "Show"}
-                </button>
-              </div>
             </div>
 
             <div>
@@ -247,6 +230,29 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPass ? "text" : "password"}
+                  placeholder="Re-enter new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 pr-14 rounded-xl bg-black/60 border border-white/15 text-sm text-white focus:border-amber-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-amber-400 cursor-pointer"
+                >
+                  {showConfirmPass ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
             {error && (
               <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs text-center font-semibold">
                 ⚠ {error}
@@ -258,7 +264,7 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold text-sm cursor-pointer"
             >
-              {loading ? "Updating Password..." : "Update Password & Return to Login"}
+              {loading ? "Resetting Password..." : "Reset Password & Return to Login"}
             </button>
 
             <button

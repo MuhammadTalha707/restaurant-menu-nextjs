@@ -1,25 +1,37 @@
 import { NextResponse } from "next/server";
 import sql from "@/lib/db";
-import { getActiveAdminPassword } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    const { username, currentPassword, newPassword } = await request.json();
+    const { username, newPassword, confirmPassword } = await request.json();
 
     const validUser = process.env.ADMIN_USERNAME || "admin";
-    const activePass = await getActiveAdminPassword();
 
-    if (!username || !currentPassword || !newPassword || newPassword.length < 4) {
+    if (!username || !newPassword || !confirmPassword) {
       return NextResponse.json(
-        { error: "All fields are required and new password must be at least 4 characters." },
+        { error: "Please fill in all fields." },
         { status: 400 }
       );
     }
 
-    if (username !== validUser || currentPassword !== activePass) {
+    if (username !== validUser) {
       return NextResponse.json(
-        { error: "Invalid Username or Current Password." },
+        { error: "Invalid Admin Username." },
         { status: 401 }
+      );
+    }
+
+    if (newPassword.length < 4) {
+      return NextResponse.json(
+        { error: "New password must be at least 4 characters." },
+        { status: 400 }
+      );
+    }
+
+    if (newPassword !== confirmPassword) {
+      return NextResponse.json(
+        { error: "New Password and Confirm Password do not match." },
+        { status: 400 }
       );
     }
 
@@ -30,8 +42,12 @@ export async function POST(request: Request) {
     `;
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch {
-    return NextResponse.json({ error: "Failed to change password." }, { status: 500 });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    return NextResponse.json(
+      { error: "Server error while updating password." },
+      { status: 500 }
+    );
   }
 }
 
