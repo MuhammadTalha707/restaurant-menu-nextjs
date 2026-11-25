@@ -6,15 +6,28 @@ import Link from "next/link";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"login" | "forgot">("login");
+
+  // Login States
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
+
+  // Forgot Password States
+  const [resetUser, setResetUser] = useState("");
+  const [recoveryKey, setRecoveryKey] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -36,6 +49,37 @@ export default function AdminLoginPage() {
     }
   };
 
+  const handleForgotReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: resetUser,
+          recoveryKey,
+          newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Password reset failed");
+      } else {
+        setSuccessMsg("Password reset successful! You can now sign in with your new password.");
+        setRecoveryKey("");
+        setNewPassword("");
+        setMode("login");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#070709] text-white flex items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl animate-pulse" />
@@ -47,76 +91,188 @@ export default function AdminLoginPage() {
             S
           </div>
           <span className="text-xs uppercase tracking-[0.25em] text-amber-400 font-bold">
-            Executive Chef Portal
+            {mode === "login" ? "Executive Chef Portal" : "Account Recovery"}
           </span>
-          <h1 className="text-3xl font-black mt-1">Admin Sign In</h1>
+          <h1 className="text-3xl font-black mt-1">
+            {mode === "login" ? "Admin Sign In" : "Reset Password"}
+          </h1>
           <p className="text-gray-400 text-xs mt-2">
-            Authorized staff only. Manage menu &amp; security settings.
+            {mode === "login"
+              ? "Authorized staff only. Manage menu & security settings."
+              : "Enter your Admin Username and Master Recovery Key (SESSION_SECRET)."}
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
-              Username
-            </label>
-            <input
-              type="text"
-              placeholder="Enter admin username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-white/15 text-white focus:border-amber-400 focus:outline-none transition"
-            />
+        {successMsg && (
+          <div className="mb-5 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs text-center font-semibold">
+            ✓ {successMsg}
           </div>
+        )}
 
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
-              Password
-            </label>
-            <div className="relative">
+        {mode === "login" ? (
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
+                Username
+              </label>
               <input
-                type={showPass ? "text" : "password"}
-                placeholder="Enter admin password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type="text"
+                placeholder="Enter admin username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full px-4 py-3.5 pr-12 rounded-xl bg-black/60 border border-white/15 text-white focus:border-amber-400 focus:outline-none transition"
+                className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-white/15 text-white focus:border-amber-400 focus:outline-none transition"
               />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                aria-label={showPass ? "Hide password" : "Show password"}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-amber-400 transition cursor-pointer"
-              >
-                {showPass ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.58 10.58a2 2 0 102.83 2.83M9.88 5.09A9.77 9.77 0 0112 5c5 0 9.27 3.11 11 7.5a11.78 11.78 0 01-4.17 5.19M6.61 6.61A11.74 11.74 0 001 12.5C2.73 16.89 7 20 12 20c1.61 0 3.14-.32 4.53-.9" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7.5 11-7.5S23 12 23 12s-4 7.5-11 7.5S1 12 1 12z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </button>
             </div>
-          </div>
 
-          {error && (
-            <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs text-center font-semibold">
-              ⚠ {error}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs uppercase tracking-wider text-gray-400">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError("");
+                    setSuccessMsg("");
+                    setMode("forgot");
+                  }}
+                  className="text-xs text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPass ? "text" : "password"}
+                  placeholder="Enter admin password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3.5 pr-12 rounded-xl bg-black/60 border border-white/15 text-white focus:border-amber-400 focus:outline-none transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  aria-label={showPass ? "Hide password" : "Show password"}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-amber-400 transition cursor-pointer"
+                >
+                  {showPass ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.58 10.58a2 2 0 102.83 2.83M9.88 5.09A9.77 9.77 0 0112 5c5 0 9.27 3.11 11 7.5a11.78 11.78 0 01-4.17 5.19M6.61 6.61A11.74 11.74 0 001 12.5C2.73 16.89 7 20 12 20c1.61 0 3.14-.32 4.53-.9" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7.5 11-7.5S23 12 23 12s-4 7.5-11 7.5S1 12 1 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-extrabold tracking-wide shadow-lg hover:scale-[1.01] transition cursor-pointer"
-          >
-            {loading ? "Verifying Session..." : "Unlock Admin Dashboard →"}
-          </button>
-        </form>
+            {error && (
+              <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs text-center font-semibold">
+                ⚠ {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-extrabold tracking-wide shadow-lg hover:scale-[1.01] transition cursor-pointer"
+            >
+              {loading ? "Verifying Session..." : "Unlock Admin Dashboard →"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleForgotReset} className="space-y-4">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                Admin Username
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. admin"
+                value={resetUser}
+                onChange={(e) => setResetUser(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-sm text-white focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                Master Recovery Key
+              </label>
+              <div className="relative">
+                <input
+                  type={showKey ? "text" : "password"}
+                  placeholder="Enter your SESSION_SECRET key"
+                  value={recoveryKey}
+                  onChange={(e) => setRecoveryKey(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 pr-14 rounded-xl bg-black/60 border border-white/15 text-sm text-white focus:border-amber-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-amber-400 cursor-pointer"
+                >
+                  {showKey ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                New Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showNewPass ? "text" : "password"}
+                  placeholder="Enter new password (min 4 chars)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 pr-14 rounded-xl bg-black/60 border border-white/15 text-sm text-white focus:border-amber-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-amber-400 cursor-pointer"
+                >
+                  {showNewPass ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs text-center font-semibold">
+                ⚠ {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold text-sm cursor-pointer"
+            >
+              {loading ? "Resetting Password..." : "Reset Password & Return to Login"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setError("");
+                setMode("login");
+              }}
+              className="w-full py-2 text-xs text-gray-400 hover:text-amber-400 cursor-pointer"
+            >
+              ← Back to Sign In
+            </button>
+          </form>
+        )}
 
         <div className="mt-6 pt-5 border-t border-white/10 text-center">
           <Link href="/" className="text-xs text-gray-400 hover:text-amber-400 transition">

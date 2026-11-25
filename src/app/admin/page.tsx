@@ -24,11 +24,21 @@ export default function AdminDashboard() {
   const [checking, setChecking] = useState(true);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+
+  // Add New Dish States
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Edit Dish States
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [updating, setUpdating] = useState(false);
+
+  // Change Password States
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showOld, setShowOld] = useState(false);
@@ -73,6 +83,43 @@ export default function AdminDashboard() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEdit = (item: MenuItem) => {
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditPrice(String(item.price));
+    setEditDescription(item.description || "");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditPrice("");
+    setEditDescription("");
+  };
+
+  const handleUpdateDish = async (e: React.FormEvent, id: number) => {
+    e.preventDefault();
+    setUpdating(true);
+    try {
+      const res = await fetch("/api/menu", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          name: editName,
+          price: Number(editPrice),
+          description: editDescription,
+        }),
+      });
+      if (res.ok) {
+        cancelEdit();
+        loadData();
+      }
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -255,23 +302,77 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Manage Menu Dishes */}
+        {/* Manage Menu Dishes (With Edit & Delete) */}
         <div className="rounded-3xl bg-white/[0.04] border border-white/10 p-7">
           <h2 className="text-xl font-extrabold mb-5">Manage Menu Dishes ({items.length})</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
-              <div key={item.id} className="p-4 rounded-2xl bg-black/50 border border-white/10 flex justify-between items-start gap-3">
-                <div>
-                  <p className="font-bold text-white">{item.name}</p>
-                  <p className="text-xs text-amber-400 font-semibold">Rs. {item.price}</p>
-                  <p className="text-xs text-gray-400 mt-1">{item.description}</p>
-                </div>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-xs font-bold cursor-pointer"
-                >
-                  Delete
-                </button>
+              <div key={item.id} className="p-4 rounded-2xl bg-black/50 border border-white/10">
+                {editingId === item.id ? (
+                  <form onSubmit={(e) => handleUpdateDish(e, item.id)} className="space-y-2.5">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 rounded-lg bg-black/80 border border-amber-500/50 text-xs text-white"
+                      placeholder="Dish Name"
+                    />
+                    <input
+                      type="number"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 rounded-lg bg-black/80 border border-amber-500/50 text-xs text-white"
+                      placeholder="Price (PKR)"
+                    />
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-lg bg-black/80 border border-amber-500/50 text-xs text-white"
+                      placeholder="Description"
+                    />
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="submit"
+                        disabled={updating}
+                        className="flex-1 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold cursor-pointer"
+                      >
+                        {updating ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex justify-between items-start gap-3">
+                    <div>
+                      <p className="font-bold text-white">{item.name}</p>
+                      <p className="text-xs text-amber-400 font-semibold">Rs. {item.price}</p>
+                      <p className="text-xs text-gray-400 mt-1">{item.description}</p>
+                    </div>
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <button
+                        onClick={() => startEdit(item)}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-black text-xs font-bold cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-xs font-bold cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
