@@ -11,10 +11,19 @@ interface MenuItem {
   description: string;
 }
 
+interface Booking {
+  id: number;
+  customer_name: string;
+  phone: string;
+  guests: number;
+  booking_date: string;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -26,10 +35,12 @@ export default function AdminDashboard() {
   const [showNew, setShowNew] = useState(false);
   const [passMsg, setPassMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  const loadMenu = async () => {
-    const res = await fetch("/api/menu");
-    const data = await res.json();
-    if (Array.isArray(data)) setItems(data);
+  const loadData = async () => {
+    const [mRes, bRes] = await Promise.all([fetch("/api/menu"), fetch("/api/bookings")]);
+    const mData = await mRes.json();
+    const bData = await bRes.json();
+    if (Array.isArray(mData)) setItems(mData);
+    if (Array.isArray(bData)) setBookings(bData);
   };
 
   useEffect(() => {
@@ -40,7 +51,7 @@ export default function AdminDashboard() {
           router.replace("/login");
         } else {
           setChecking(false);
-          loadMenu();
+          loadData();
         }
       });
   }, [router]);
@@ -58,7 +69,7 @@ export default function AdminDashboard() {
         setName("");
         setPrice("");
         setDescription("");
-        loadMenu();
+        loadData();
       }
     } finally {
       setSaving(false);
@@ -219,6 +230,32 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Table Bookings Section */}
+        <div className="rounded-3xl bg-white/[0.04] border border-emerald-500/30 p-7">
+          <h2 className="text-xl font-extrabold text-emerald-400 mb-5">
+            Table Reservations ({bookings.length})
+          </h2>
+          {bookings.length === 0 ? (
+            <p className="text-sm text-gray-400">Abhi tak koi table book nahi hui.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bookings.map((b) => (
+                <div key={b.id} className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <p className="font-bold text-white">{b.customer_name}</p>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                      {b.guests} Guests
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-400 font-semibold">{b.booking_date}</p>
+                  <p className="text-xs text-gray-400">Phone: {b.phone}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Manage Menu Dishes */}
         <div className="rounded-3xl bg-white/[0.04] border border-white/10 p-7">
           <h2 className="text-xl font-extrabold mb-5">Manage Menu Dishes ({items.length})</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
