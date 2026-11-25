@@ -38,6 +38,14 @@ export default function AdminDashboard() {
   const [editDescription, setEditDescription] = useState("");
   const [updating, setUpdating] = useState(false);
 
+  // Edit Booking States
+  const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editGuests, setEditGuests] = useState("");
+  const [editBookingDate, setEditBookingDate] = useState("");
+  const [updatingBooking, setUpdatingBooking] = useState(false);
+
   // Change Password States
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -126,6 +134,52 @@ export default function AdminDashboard() {
   const handleDelete = async (id: number) => {
     const res = await fetch(`/api/menu?id=${id}`, { method: "DELETE" });
     if (res.ok) setItems((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  // Booking Edit & Delete Handlers
+  const startEditBooking = (b: Booking) => {
+    setEditingBookingId(b.id);
+    setEditCustomerName(b.customer_name);
+    setEditPhone(b.phone);
+    setEditGuests(String(b.guests));
+    setEditBookingDate(b.booking_date || "");
+  };
+
+  const cancelEditBooking = () => {
+    setEditingBookingId(null);
+    setEditCustomerName("");
+    setEditPhone("");
+    setEditGuests("");
+    setEditBookingDate("");
+  };
+
+  const handleUpdateBooking = async (e: React.FormEvent, id: number) => {
+    e.preventDefault();
+    setUpdatingBooking(true);
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          customer_name: editCustomerName,
+          phone: editPhone,
+          guests: Number(editGuests),
+          booking_date: editBookingDate,
+        }),
+      });
+      if (res.ok) {
+        cancelEditBooking();
+        loadData();
+      }
+    } finally {
+      setUpdatingBooking(false);
+    }
+  };
+
+  const handleDeleteBooking = async (id: number) => {
+    const res = await fetch(`/api/bookings?id=${id}`, { method: "DELETE" });
+    if (res.ok) setBookings((prev) => prev.filter((b) => b.id !== id));
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -277,7 +331,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Table Bookings Section */}
+         {/* Table Bookings Section (With Edit & Delete) */}
         <div className="rounded-3xl bg-white/[0.04] border border-emerald-500/30 p-7">
           <h2 className="text-xl font-extrabold text-emerald-400 mb-5">
             Table Reservations ({bookings.length})
@@ -287,15 +341,87 @@ export default function AdminDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {bookings.map((b) => (
-                <div key={b.id} className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-1">
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold text-white">{b.customer_name}</p>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">
-                      {b.guests} Guests
-                    </span>
-                  </div>
-                  <p className="text-xs text-amber-400 font-semibold">{b.booking_date}</p>
-                  <p className="text-xs text-gray-400">Phone: {b.phone}</p>
+                <div key={b.id} className="p-4 rounded-2xl bg-black/50 border border-white/10">
+                  {editingBookingId === b.id ? (
+                    <form onSubmit={(e) => handleUpdateBooking(e, b.id)} className="space-y-2.5">
+                      <input
+                        type="text"
+                        value={editCustomerName}
+                        onChange={(e) => setEditCustomerName(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg bg-black/80 border border-emerald-500/50 text-xs text-white"
+                        placeholder="Customer Name"
+                      />
+                      <input
+                        type="text"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg bg-black/80 border border-emerald-500/50 text-xs text-white"
+                        placeholder="Phone Number"
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        value={editGuests}
+                        onChange={(e) => setEditGuests(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg bg-black/80 border border-emerald-500/50 text-xs text-white"
+                        placeholder="Number of Guests"
+                      />
+                      <input
+                        type="text"
+                        value={editBookingDate}
+                        onChange={(e) => setEditBookingDate(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg bg-black/80 border border-emerald-500/50 text-xs text-white"
+                        placeholder="Booking Date / Time"
+                      />
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="submit"
+                          disabled={updatingBooking}
+                          className="flex-1 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold cursor-pointer"
+                        >
+                          {updatingBooking ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditBooking}
+                          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-bold text-white">{b.customer_name}</p>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">
+                            {b.guests} Guests
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-400 font-semibold">{b.booking_date}</p>
+                        <p className="text-xs text-gray-400">Phone: {b.phone}</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        <button
+                          onClick={() => startEditBooking(b)}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-black text-xs font-bold cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBooking(b.id)}
+                          className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-xs font-bold cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -381,4 +507,6 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+
 
