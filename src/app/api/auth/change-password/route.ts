@@ -1,21 +1,28 @@
 import { NextResponse } from "next/server";
 import sql from "@/lib/db";
-import { getActiveAdminPassword, isAdminAuthenticated } from "@/lib/auth";
+import { getActiveAdminPassword } from "@/lib/auth";
 
 export async function POST(request: Request) {
-  if (!(await isAdminAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const { oldPassword, newPassword } = await request.json();
-    if (!oldPassword || !newPassword || newPassword.length < 4) {
-      return NextResponse.json({ error: "New password must be at least 4 characters" }, { status: 400 });
+    const { username, currentPassword, newPassword, confirmPassword } = await request.json();
+
+    const validUser = process.env.ADMIN_USERNAME || "admin";
+    const activePass = await getActiveAdminPassword();
+
+    if (!username || !currentPassword || !newPassword || !confirmPassword) {
+      return NextResponse.json({ error: "Please fill in all fields." }, { status: 400 });
     }
 
-    const currentPass = await getActiveAdminPassword();
-    if (oldPassword !== currentPass) {
-      return NextResponse.json({ error: "Current password is incorrect" }, { status: 401 });
+    if (username !== validUser || currentPassword !== activePass) {
+      return NextResponse.json({ error: "Invalid Username or Current Password." }, { status: 401 });
+    }
+
+    if (newPassword.length < 4) {
+      return NextResponse.json({ error: "New password must be at least 4 characters." }, { status: 400 });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return NextResponse.json({ error: "New Password and Confirm Password do not match." }, { status: 400 });
     }
 
     await sql`
@@ -25,8 +32,9 @@ export async function POST(request: Request) {
     `;
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch {
-    return NextResponse.json({ error: "Failed to update password" }, { status: 500 });
+  } catch (err) {
+    console.error("Change password error:", err);
+    return NextResponse.json({ error: "Failed to update password." }, { status: 500 });
   }
 }
 
